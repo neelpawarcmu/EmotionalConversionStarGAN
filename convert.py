@@ -43,6 +43,8 @@ import utils.data_preprocessing_utils as pp
 import utils.preprocess_world as pw
 from run_preprocessing import MAX_LENGTH
 
+from scipy.io.wavfile import read
+
 if __name__=='__main__':
 
     # Parse args:
@@ -98,12 +100,14 @@ if __name__=='__main__':
     # s = solver.Solver(None, None, config, load_dir = None)
     # targets =
     num_emos = config['model']['num_classes']
-    emo_labels = torch.Tensor(range(0, num_emos)).long()
-    emo_targets = F.one_hot(emo_labels, num_classes = num_emos).float().to(device = device)
+    emo_labels = torch.Tensor(range(0, num_emos)).long() # [0, 1, 2]
+    # Question 1
+    emo_targets = F.one_hot(emo_labels, num_classes = num_emos).float().to(device = device) #print and check ~ [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
     print(f"Number of emotions = {num_emos}")
 
     data_dir = config['data']['dataset_dir']
-    annotations_dict = pp.read_annotations(os.path.join(data_dir, 'annotations'))
+    # Question 2
+    annotations_dict = pp.read_annotations(os.path.join(data_dir, 'annotations')) # key: filename w/o extension, value: [emo_label, speaker_label]
 
     if args.in_dir is not None:
         # Get all .wav files in directory in_dir
@@ -117,6 +121,7 @@ if __name__=='__main__':
     ########################################
     #        WORLD CONVERSION LOOP         #
     ########################################
+    # Question 3 split again????
     train_npy_files, test_npy_files = my_dataset.get_train_test_split(
         os.path.join(config['data']['dataset_dir'], 'world'), config
     )
@@ -124,7 +129,7 @@ if __name__=='__main__':
     def npy_to_wav(filename):
         """ Convert xxx.npy to xxx.wav.  """
         filefront = filename.split('.')[0]
-        return filefront + ".wav"
+        return filefront + ".wav" # doesnt change files, this is just to retreive audio files using these names
 
     # Assuming that sample.npy in the world folder exists as sample.wav in the audio folder
     train_wav_files = [npy_to_wav(f) for f in train_npy_files]
@@ -138,7 +143,7 @@ if __name__=='__main__':
         Returns nothing
         """
         for file_num, f in enumerate(files):
-            f = os.path.basename(f)[:-4] + ".wav"
+            f = os.path.basename(f)[:-4] + ".wav" #remove .xyz and replacing with .wav ??? Question 4 #is .wav necessary?
 
             try:
                 wav, labels = pp.get_wav_and_labels(f, config['data']['dataset_dir'], annotations_dict)
@@ -183,7 +188,7 @@ if __name__=='__main__':
                     model_iteration_string = model.config['model']['name'] + '_' + os.path.basename(args.checkpoint).replace('.ckpt', '')
                     filename_wav = model_iteration_string + '_' + f[0:-4] + "_" + str(int(labels[0].item())) + "to" + \
                                 str(i) + ".wav"
-                    filename_wav = os.path.join(args.out_dir, out_folder, filename_wav)
+                    filename_wav = os.path.join(args.out_dir, out_folder, filename_wav) #name of output wav file to save
 
                     fake = fake.squeeze()
                     # print("Sampled size = ",fake.size())
@@ -205,19 +210,44 @@ if __name__=='__main__':
                     # print("ap shape = ", ap.shape)
                     # print("f0 shape = ", f0.shape)
                     # print(converted_sp.shape)
-                    audio_utils.save_world_wav([f0,ap,sp,converted_sp], filename_wav)
+                    audio_utils.save_world_wav([f0,ap,sp,converted_sp], filename_wav) # probably saves wav files ???
 
-                    # Copy original file to output directory for ease
+                    # Copy original file to output directory for ease 
                     src_filepath = os.path.join(data_dir, f[0:-4] + ".wav")
                     dest_filename = model_iteration_string + '_' + f[0:-4] + "_" + str(int(labels[0].item())) + "_orig.wav"
                     dest_filepath = os.path.join(args.out_dir, out_folder, dest_filename)
                     shutil.copy(src_filepath, dest_filepath)
             # print(f, " converted.")
+            
+            # get mcd for input and output
+            print(f'getting mcd for input (f): {f} and output (filename_wav) {filename_wav} ...')
+            mcd = get_mcd_pair(f, filename_wav)
+            print('mcd = ', mcd)
+            
             if (file_num+1) % 20 == 0:
                 print(file_num+1, " done.")
 
     convert_files(train_wav_files, "train")
     convert_files(test_wav_files, "test")
+
+    def wav_to_npy(path):
+        wav = read(path) # read in as wav file
+        npy = np.array(wav[1],dtype=float) # convert wav to npy file
+        return npy
+
+    def get_mcd_pair(path_1, path_2): # take paths to two .wav files
+        # convert to paths to npy files
+        audio_1, audio_2 = wav_to_npy(path_1, path_2) # is this required? cant we directly get numpy array?
+        # convert wav to spectrogram
+        audio_1 = audio_utils.wav2spectrogram(y=audio_1)
+        audio_2 = audio_utils.wav2spectrogram(y=audio_2)
+        # convert spectrograms to mfccs
+        audio_1 = librosa.feature.mfcc(S = audio_1, n_mfcc=23)
+        audio_2 = librosa.feature.mfcc(S = audio_2, n_mfcc=23)
+        # find mcd between two mfccs
+        K = 10 / np.log(10) * np.sqrt(2)
+        mcd = K * np.mean(np.sqrt(np.sum((audio_1 - audio_2) ** 2, axis=1)))
+        return mcd
 
     ########################################
     #         MEL CONVERSION LOOP          #
