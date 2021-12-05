@@ -219,17 +219,14 @@ if __name__=='__main__':
                     shutil.copy(src_filepath, dest_filepath)
             # print(f, " converted.")
             
-            # get mcd for input and output
-            print(f'getting mcd for input (f): {f} and output (filename_wav) {filename_wav} ...')
-            mcd = get_mcd_pair(f, filename_wav)
-            print('mcd = ', mcd)
+            # get mcd for input and output, only for test files
+            if out_folder == 'test':
+                print(f'getting mcd for input (f): {f} and output (filename_wav) {filename_wav} ...')
+                mcd = get_mcd_pair(f, filename_wav)
+                print('mcd = ', mcd)
             
             if (file_num+1) % 20 == 0:
                 print(file_num+1, " done.")
-
-    convert_files(train_wav_files, "train")
-    convert_files(test_wav_files, "test")
-
     def wav_to_npy(path):
         wav = read(path) # read in as wav file
         npy = np.array(wav[1],dtype=float) # convert wav to npy file
@@ -249,6 +246,10 @@ if __name__=='__main__':
         mcd = K * np.mean(np.sqrt(np.sum((audio_1 - audio_2) ** 2, axis=1)))
         return mcd
 
+    convert_files(train_wav_files, "train")
+    convert_files(test_wav_files, "test")
+
+    
     ########################################
     #         MEL CONVERSION LOOP          #
     ########################################
