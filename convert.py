@@ -135,6 +135,27 @@ if __name__=='__main__':
     train_wav_files = [npy_to_wav(f) for f in train_npy_files]
     test_wav_files = [npy_to_wav(f) for f in test_npy_files]
 
+    # wav to npy for mcd calc
+    def wav_to_npy(path):
+        wav = read(path) # read in as wav file
+        npy = np.array(wav[1],dtype=float) # convert wav to npy file
+        return npy
+
+    # mcd pair
+    def get_mcd_pair(path_1, path_2): # take paths to two .wav files
+        # convert to paths to npy files
+        audio_1, audio_2 = wav_to_npy(path_1, path_2) # is this required? cant we directly get numpy array?
+        # convert wav to spectrogram
+        audio_1 = audio_utils.wav2spectrogram(y=audio_1)
+        audio_2 = audio_utils.wav2spectrogram(y=audio_2)
+        # convert spectrograms to mfccs
+        audio_1 = librosa.feature.mfcc(S = audio_1, n_mfcc=23)
+        audio_2 = librosa.feature.mfcc(S = audio_2, n_mfcc=23)
+        # find mcd between two mfccs
+        K = 10 / np.log(10) * np.sqrt(2)
+        mcd = K * np.mean(np.sqrt(np.sum((audio_1 - audio_2) ** 2, axis=1)))
+        return mcd
+
     def convert_files(files, out_folder):
         """
         Params:
@@ -227,26 +248,9 @@ if __name__=='__main__':
             
             if (file_num+1) % 20 == 0:
                 print(file_num+1, " done.")
-    def wav_to_npy(path):
-        wav = read(path) # read in as wav file
-        npy = np.array(wav[1],dtype=float) # convert wav to npy file
-        return npy
 
-    def get_mcd_pair(path_1, path_2): # take paths to two .wav files
-        # convert to paths to npy files
-        audio_1, audio_2 = wav_to_npy(path_1, path_2) # is this required? cant we directly get numpy array?
-        # convert wav to spectrogram
-        audio_1 = audio_utils.wav2spectrogram(y=audio_1)
-        audio_2 = audio_utils.wav2spectrogram(y=audio_2)
-        # convert spectrograms to mfccs
-        audio_1 = librosa.feature.mfcc(S = audio_1, n_mfcc=23)
-        audio_2 = librosa.feature.mfcc(S = audio_2, n_mfcc=23)
-        # find mcd between two mfccs
-        K = 10 / np.log(10) * np.sqrt(2)
-        mcd = K * np.mean(np.sqrt(np.sum((audio_1 - audio_2) ** 2, axis=1)))
-        return mcd
 
-    convert_files(train_wav_files, "train")
+    # convert_files(train_wav_files, "train")
     convert_files(test_wav_files, "test")
 
     
