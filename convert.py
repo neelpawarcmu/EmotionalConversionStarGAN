@@ -165,7 +165,7 @@ if __name__=='__main__':
         """
         for file_num, f in enumerate(files):
             f = os.path.basename(f)[:-4] + ".wav" #remove .xyz and replacing with .wav ??? Question 4 #is .wav necessary?
-            input_file = '.processed_data/audio/'+f
+            input_file = './processed_data/audio/'+f
 
             try:
                 wav, labels = pp.get_wav_and_labels(f, config['data']['dataset_dir'], annotations_dict)
