@@ -164,6 +164,7 @@ if __name__=='__main__':
         Returns nothing
         """
         for file_num, f in enumerate(files):
+            input_file = '.processed_data/audio/'+f
             f = os.path.basename(f)[:-4] + ".wav" #remove .xyz and replacing with .wav ??? Question 4 #is .wav necessary?
 
             try:
