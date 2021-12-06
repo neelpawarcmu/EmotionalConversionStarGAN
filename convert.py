@@ -144,7 +144,7 @@ if __name__=='__main__':
     # mcd pair
     def get_mcd_pair(path_1, path_2): # take paths to two .wav files
         # convert to paths to npy files
-        audio_1, audio_2 = wav_to_npy(path_1, path_2) # is this required? cant we directly get numpy array?
+        audio_1, audio_2 = wav_to_npy(path_1), wav_to_npy(path_2) # is this required? cant we directly get numpy array?
         # convert wav to spectrogram
         audio_1 = audio_utils.wav2spectrogram(y=audio_1)
         audio_2 = audio_utils.wav2spectrogram(y=audio_2)
