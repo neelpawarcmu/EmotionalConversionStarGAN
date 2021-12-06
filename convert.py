@@ -239,11 +239,14 @@ if __name__=='__main__':
                     dest_filename = model_iteration_string + '_' + f[0:-4] + "_" + str(int(labels[0].item())) + "_orig.wav"
                     dest_filepath = os.path.join(args.out_dir, out_folder, dest_filename)
                     shutil.copy(src_filepath, dest_filepath)
+
+                    print('filename_wav shape: ', filename_wav.shape)
+                    
             # print(f, " converted.")
             
             # get mcd for input and output, only for test files
             if out_folder == 'test':
-                print(f'getting mcd for input (f): {f} and output (filename_wav) {filename_wav} ...')
+                print(f'getting mcd for input (input_file): {input_file} and output (filename_wav) {filename_wav} ...')
                 mcd = get_mcd_pair(input_file, filename_wav)
                 print('mcd = ', mcd)
             
