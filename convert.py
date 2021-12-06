@@ -244,7 +244,7 @@ if __name__=='__main__':
             # get mcd for input and output, only for test files
             if out_folder == 'test':
                 print(f'getting mcd for input (f): {f} and output (filename_wav) {filename_wav} ...')
-                mcd = get_mcd_pair(f, filename_wav)
+                mcd = get_mcd_pair(input_file, filename_wav)
                 print('mcd = ', mcd)
             
             if (file_num+1) % 20 == 0:
