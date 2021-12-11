@@ -166,7 +166,7 @@ EmotionalConversionStarGAN
   |     
 ```
 
-###stargan
+### stargan
 
 The ```stargan``` folder has the core model architecture and the code required to run the model.
 
@@ -182,7 +182,7 @@ When applicable, we concatenated the continuous emotion embeddings here
 **-classifiers.py**: Contains the emotion classifier
 
 
-###utils
+### utils
 
 The ```utils``` folder had the files for preprocessing audio
 
@@ -192,32 +192,32 @@ The ```utils``` folder had the files for preprocessing audio
 
 **-preprocess_world.py** : Preprocessing file for WORLD features
 
-###configs
+### configs
 
 Contains ```configs``` files for step1 and step2. 
 
-###mcd_evaluate
+### mcd_evaluate
 
 Used to compute the Mel-ceptral distortion.
 
-###convert.py
+### convert.py
 
 Runs a testing loop to convert the original files to the emotions given. 
 
-###full_training_script.sh
+### full_training_script.sh
 
 Scripts to help kick off training. This can be used as a single point to start training.
 More details [here](#training-emotionstargan)
 
-###classifier_train.py 
+### classifier_train.py 
 
 Script to train the emotion classifier
 
-###train_main.py
+### train_main.py
 
 Trains the model for the steps passed in the config using solver.py
 
-###notebooks
+### notebooks
 This folder contains notebooks we ran in Google Colab for various pre- and post-processing. 
 
 **-mfcc_loss_calc.ipynb** : Calculate the MFCC loss
