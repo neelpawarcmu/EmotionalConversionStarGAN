@@ -32,9 +32,9 @@ git clone https://github.com/eric-zhizu/EmotionalConversionStarGAN.git
 cd EmotionalConversionStarGAN
 ```
 
-**- Repositories:**
+**- Branches:**
 
-We have three primary repositories with three version of our model: *master*, *ser-embed-model-1*, and 
+We have three primary branches with three version of our model: *master*, *ser-embed-model-1*, and 
 *ser-embed-model-5*. 
 More details can be found [here](#model-implementations)
 
@@ -125,7 +125,7 @@ This can be found in ```stargan/model.py``` in branches ```ser_embed_model_1``` 
 
 # Model Implementations
 
-We have three primary model implementation in three different repositories:
+We have three primary model implementation in three different branches:
 
 1. master: Baseline model with modifications to use the DeepEST dataset
 2. StarGAN-Embed-1: Code in ser-embed-model-1. Model extension with SER continuous embedding.
