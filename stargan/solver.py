@@ -161,49 +161,8 @@ class Solver(object):
             emo_labels_ones = F.one_hot(emo_labels, num_classes=num_emos).float().to(device=self.device)
             emo_targets_ones = F.one_hot(emo_targets, num_classes=num_emos).float().to(device=self.device)
 
-            #############################################################
-            #                    TRAIN CLASSIFIERS                      #
-            #############################################################
             ce_weighted_loss_fn = nn.CrossEntropyLoss(weight=self.emo_loss_weights)
             ce_loss_fn = nn.CrossEntropyLoss()
-
-            if self.config['loss']['train_classifier'] and not self.recon_only:
-                print('Training Classifiers...')
-
-                self.model.reset_grad()
-
-                # Train with x_real
-                preds_emo_real = self.model.emo_cls(x_real, x_lens)
-
-                c_emo_real_loss = ce_weighted_loss_fn(preds_emo_real, emo_labels)
-
-                c_emo_real_loss.backward()
-                self.model.emo_cls_optimizer.step()
-
-                if self.model.use_speaker:
-                    self.model.reset_grad()
-
-                    # Train with x_real
-                    preds_speaker_real = self.model.speaker_cls(x_real, x_lens)
-
-                    c_speaker_real_loss = ce_loss_fn(preds_speaker_real, spk_labels)
-
-                    c_speaker_real_loss.backward()
-                    self.model.speaker_cls_optimizer.step()
-
-                if self.model.use_dimension:
-                    self.model.reset_grad()
-
-                    # Train with x_real
-                    preds_dimension_real = self.model.dimension_cls(x_real, x_lens)
-
-                    # ;;; DO FOR MULTILABEL
-                    c_dimension_real_loss = ce_loss_fn(preds_dimension_real, dim_labels)
-
-                    c_dimension_real_loss.backward()
-                    self.model.speaker_cls_optimizer.step()
-            else:
-                print('No classifier training this run.')
 
             #############################################################
             #                    TRAIN DISCRIMINATOR                    #
@@ -261,6 +220,7 @@ class Solver(object):
                 g_loss = loss_g_fake + self.lambda_id * loss_id + self.lambda_cycle * loss_cycle
 
                 if not self.recon_only:
+                    # TODO Modify emo_cls
                     preds_emo_fake = self.model.emo_cls(x_fake, x_fake_lens)
                     loss_g_emo_cls = ce_weighted_loss_fn(preds_emo_fake, emo_targets)
                     g_loss += self.lambda_g_emo_cls * loss_g_emo_cls

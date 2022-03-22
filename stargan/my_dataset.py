@@ -1,7 +1,7 @@
 """
 my_dataset.py
 
-Author - Max Elliott
+Author - Max Elliott, Eric Zhou
 
 The custom dataset and collate function described in the report.
 """
@@ -13,6 +13,8 @@ import numpy as np
 from librosa.util import find_files
 import random
 import os
+
+from utils import audio_utils
 
 
 def get_train_test_split(data_dir, config):
@@ -135,6 +137,7 @@ class MyDataset(data_utils.Dataset):
             self.feat_dir = os.path.join(self.dataset_dir, "world")
 
         self.labels_dir = os.path.join(self.dataset_dir, "labels")
+        self.wavs_dir = os.path.join(self.dataset_dir, "audio")
 
         self.filenames = filenames
 
@@ -143,11 +146,15 @@ class MyDataset(data_utils.Dataset):
         f = self.filenames[index]
         mel = np.load(self.feat_dir + "/" + f + ".npy")
         label = np.load(self.labels_dir + "/" + f + ".npy")
+        # @eric-zhizu: Needed for pretrained SER
+        wav = audio_utils.load_wav(self.wavs_dir + "/" + f + ".wav")
 
         mel = torch.FloatTensor(mel).t()
         label = torch.Tensor(label).long()
+        # @eric-zhizu
+        wav = torch.FloatTensor(wav).t()
 
-        return mel, label
+        return mel, wav, label
 
     def __len__(self):
         return len(self.filenames)
@@ -155,7 +162,7 @@ class MyDataset(data_utils.Dataset):
 
 def collate_length_order(batch):
     """
-    batch: Batch elements are tuples ((Tensor)sequence, target)
+    batch: Batch elements are tuples ((Tensor)world sequence, wav sequence, target)
 
     Sorts batch by sequence length
 
@@ -171,6 +178,9 @@ def collate_length_order(batch):
     # Get each sequence and pad it
     sequences = [x[0] for x in sorted_batch]
 
+    # @eric-zhizu: Get each wav form and pad it
+    wav_forms = [x[1] for x in sorted_batch]
+
     #################################################
     #            FOR FIXED LENGTH INPUTS            #
     #################################################
@@ -180,48 +190,15 @@ def collate_length_order(batch):
             sequences[i] = seq[start_index:start_index+512, :]
 
     sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences, batch_first=True)
+    # @eric-zhizu
+    wav_forms_padded = torch.nn.utils.rnn.pad_sequence(wav_forms, batch_first=True)
+
     current_len = sequences_padded.size(1)
+
     if current_len < 512:
         pad_len = 512 - current_len
         new_tensor = torch.zeros((sequences_padded.size(0),pad_len,sequences_padded.size(2)))
         sequences_padded = torch.cat([sequences_padded, new_tensor], dim =1)
-    # else:
-    #     sequences_padded = sequences_padded[:,:512,:]
-    # print(f"Padded length: {sequences_padded.size(1)}")
-
-    # sequences_padded = [_pad_sequence(x, 512) for x in sequences]
-    # sequences_padded = torch.stack(sequences_padded)
-
-    #################################################
-    #          FOR VARIABLE LENGTH INPUTS           #
-    #################################################
-    # sequences_padded = torch.nn.utils.rnn.pad_sequence(sequences, batch_first=True)
-    #
-    # max_len = sequences_padded.size(1)
-    # print("Original size = ", max_len)
-    # div8 = max_len%8==0
-    # div5 = max_len%5==0
-    # div9 = max_len%3==0
-    # if not (div8 and div5 and div9):
-    #     pad_len = max_len + 1
-    #     # print("Current pad:", pad_len)
-    #     while (pad_len%8 !=0 or pad_len%5!=0 or pad_len%3!=0):
-    #         pad_len += 1
-    #         # print("Current pad:", pad_len%9)
-    # div16 = max_len%16==0
-    #
-    # if not div16:
-    #     pad_len = max_len + 1
-    #     # print("Current pad:", pad_len)
-    #     while pad_len%16 !=0:
-    #         pad_len += 1
-    #         # print("Current pad:", pad_len%9)
-    #     pad_len = pad_len - max_len
-    #     new_tensor = torch.zeros((sequences_padded.size(0),pad_len,sequences_padded.size(2)))
-    #     sequences_padded = torch.cat([sequences_padded, new_tensor], dim =1)
-
-    # print("New size = ", max_len+pad_len)
-    # print("Pad size = ", pad_len)
 
     # Also need to store the length of each sequence
     # This is later needed in order to unpad the sequences
@@ -231,10 +208,14 @@ def collate_length_order(batch):
             lengths[i] = 512
     lengths = torch.LongTensor([len(x) for x in sequences])
 
-    # Don't forget to grab the labels of the *sorted* batch
-    targets = torch.stack([x[1] for x in sorted_batch]).long()
+    # @eric-zhizu: speechbrain interface requires that lengths be normalized to 1
+    wav_forms_max_len = wav_forms_padded.size(1)
+    wav_form_lengths = torch.LongTensor([len(x) for x in wav_forms]) / wav_forms_max_len
 
-    return [sequences_padded, lengths], targets
+    # Don't forget to grab the labels of the *sorted* batch
+    targets = torch.stack([x[2] for x in sorted_batch]).long()
+
+    return [sequences_padded, lengths], [wav_forms_padded, wav_form_lengths], targets
 
 
 def make_variable_dataloader(train_set, test_set, batch_size=64):
@@ -243,9 +224,10 @@ def make_variable_dataloader(train_set, test_set, batch_size=64):
                                          collate_fn=collate_length_order,
                                          num_workers=0, shuffle=True)
 
+    # @eric-zhizu: Change shuffle = True to shuffle = False
     test_loader = data_utils.DataLoader(test_set, batch_size=batch_size,
                                         collate_fn=collate_length_order,
-                                        num_workers=0, shuffle=True)
+                                        num_workers=0, shuffle=False)
 
     return train_loader, test_loader
 

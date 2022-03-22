@@ -12,8 +12,9 @@ used.
 """
 import os
 from stargan.classifiers import *
-
 import stargan.unet.unet_model as unet_model
+
+from speechbrain.pretrained.interfaces import foreign_class
 
 
 class StarGAN_emo_VC1(object):
@@ -250,15 +251,14 @@ class StarGAN_emo_VC1(object):
         print("Model and optimizers loaded.")
 
     def load_pretrained_classifier(self, load_dir, map_location=None):
+        """Load pretrained emotion classifier from hugging face
 
-        if map_location is not None:
-            dictionary = torch.load(load_dir, map_location=map_location)
-        else:
-            dictionary = torch.load(load_dir)
-
-        con_opt = self.config['optimizer']
-        self.emo_cls.load_state_dict(dictionary['model_state_dict'])
-        self.emo_cls_optimizer = torch.optim.Adam(self.emo_cls.parameters(), con_opt['emo_cls_lr'], [con_opt['beta1'], con_opt['beta2']],weight_decay = 0.000001)
+        Read more: https://huggingface.co/speechbrain/emotion-recognition-wav2vec2-IEMOCAP
+        """
+        self.emo_cls = foreign_class(source="speechbrain/emotion-recognition-wav2vec2-IEMOCAP",
+                                     pymodule_file="custom_interface.py",
+                                     classname="CustomEncoderWav2vec2Classifier",
+                                     run_opts={"device":"cuda"})
 
 
 class Down2d(nn.Module):
